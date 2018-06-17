@@ -23,8 +23,10 @@ class CompilationEngine
 		void compileParameterList(std::unique_ptr<Tokenizer> &);
 		void compileStatments(std::unique_ptr<Tokenizer> &);
 		void compileLet(std::unique_ptr<Tokenizer> &);
-		void compileExpression(std::unique_ptr<Tokenizer> &, std::string);
+		void compileExpression(std::unique_ptr<Tokenizer> &);
 		void compileTerm(std::unique_ptr<Tokenizer> &);
+		void subroutineCall(std::unique_ptr<Tokenizer> &);
+		void compileExpressionList(std::unique_ptr<Tokenizer> &);
 		void writeKeyword(std::string);
 		void writeSymbol(std::string);
 		void writeIdentifier(std::string);

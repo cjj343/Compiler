@@ -219,14 +219,8 @@ void CompilationEngine::compileLet(std::unique_ptr<Tokenizer> & tptr)
 			safeAdvance(tptr, SYMBOL);
 			writeSymbol(tptr->getToken());
 
-			/*
-			HHHHHHHHHHHHHHHHH
-			EEEEEEEEEEEEEEEEE
-			RRRRRRRRRRRRRRRRR
-			EEEEEEEEEEEEEEEEE
-			*/
 			//the stuff in between []
-			compileExpression(tptr, "]");
+			compileExpression(tptr);
 
 			// ]
 			safeAdvance(tptr, SYMBOL);
@@ -251,49 +245,70 @@ void CompilationEngine::compileLet(std::unique_ptr<Tokenizer> & tptr)
 			compileExpression(tptr);
 		}
 
-			// ;
-			safeAdvance(tptr, SYMBOL);
-			writeSymbol(tptr->getToken());
+		// ;
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
 
 		decrementTabs();
 	outputFile << printTabs() << "</letStatement>" << std::endl;
 }
 
-void CompilationEngine::compileExpression(std::unique_ptr<Tokenizer> & tptr, std::string delim)
+void CompilationEngine::compileExpression(std::unique_ptr<Tokenizer> & tptr)
 {
 
 	outputFile << printTabs() << "<expression>" << std::endl;
 	incrementTabs();
 
-	while(tptr->tokenPeek() != delim)
+	//loop until we encounter the end of the expression
+	while(tptr->tokenPeek() != "]" && tptr->tokenPeek() != ")" && tptr->tokenPeek() != ",")
 	{
-		compileTerm(tptr);
+		//operators
+		if(tptr->tokenPeek() == "+" || tptr->tokenPeek() == "-" || tptr->tokenPeek() == "*" || tptr->tokenPeek() == "/" || tptr->tokenPeek() == "&" || tptr->tokenPeek() == "|" || 
+			tptr->tokenPeek() == "<" || tptr->tokenPeek() == ">" || tptr->tokenPeek() == "=")
+		{
+			//operator
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+		}
+
+		else
+		{
+			compileTerm(tptr);
+		}
 	}
+
+	decrementTabs();
+	outputFile << printTabs() << "</expression>" << std::endl;
 
 }
 
 void CompilationEngine::compileTerm(std::unique_ptr<Tokenizer> & tptr)
 {
-	outputFile << printTabs() << "<expression>" << std::endl;
+	outputFile << printTabs() << "<term>" << std::endl;
 	incrementTabs();
 
+		//get the next token without pre determined type
 		safeAdvanceNoTypeCheck(tptr);
 
+		//term is int constant
 		if(tptr->tokenType() == INT_CONST)
 		{
 			writeIntConst(tptr->getToken());
 		}
 
+		//keyword including constant keywords
 		else if(tptr->tokenType() == KEYWORD)
 		{
 			writeKeyword(tptr->getToken());
 		}
 
+		//string
 		else if(tptr->tokenType() == STRING_CONST)
 		{
 			writeStringConst(tptr->getToken());
 		}
 
+		//variables and subroutine call
 		else if(tptr->tokenType() == IDENTIFIER)
 		{
 			//unique name
@@ -308,16 +323,113 @@ void CompilationEngine::compileTerm(std::unique_ptr<Tokenizer> & tptr)
 				writeSymbol(tptr->getToken());
 
 				//the stuff in between []
-				compileExpression(tptr, "]");
+				compileExpression(tptr);
 
 				// ]
 				safeAdvance(tptr, SYMBOL);
 				writeSymbol(tptr->getToken());
 			}
+
+			//for subroutine calls or accessing member of class
+			else if(tptr->tokenPeek() == "(" || tptr->tokenPeek() == ".")
+			{
+				subroutineCall(tptr);
+			}
 		}
 
+		//checking for further expressions or unary ops
+		else if (tptr->tokenType() == SYMBOL)
+		{
+			//another expression
+			if(tptr->tokenPeek() == "(")
+			{
+				// (
+				safeAdvance(tptr, SYMBOL);
+				writeSymbol(tptr->getToken());
 
+				//the stuff in between ()
+				compileExpression(tptr);
 
+				// )
+				safeAdvance(tptr, SYMBOL);
+				writeSymbol(tptr->getToken());
+			}
+
+			//unary ops
+			else if(tptr->tokenPeek() == "-" || tptr->tokenPeek() == "~")
+			{
+				// unary operator
+				safeAdvance(tptr, SYMBOL);
+				writeSymbol(tptr->getToken());
+			}
+		}
+
+	decrementTabs();
+	outputFile << printTabs() << "</term>" << std::endl;
+}
+
+void CompilationEngine::subroutineCall(std::unique_ptr<Tokenizer> & tptr)
+{
+	//subroutine name has already been printed in calling function
+	//print the parens and call expression list
+	if(tptr->tokenPeek() == "(")
+	{
+		// (
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		compileExpressionList(tptr);
+
+		//)
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken())
+	}
+
+	//class name or var name has already been printed in calling function
+	//print the dot operator and then the sub
+	else if(tptr->tokenPeek() == ".")
+	{
+		//.
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken())
+
+		//subroutineName
+		safeAdvance(tptr, IDENTIFIER);
+		writeIdentifier(tptr->getToken());
+
+		// (
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		compileExpressionList(tptr);
+
+		//)
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken())
+	}
+
+}
+
+void CompilationEngine::compileExpressionList(std::unique_ptr<Tokenizer> & tptr)
+{
+	outputFile << printTabs() << "<expressionList>" << std::endl;
+	incrementTabs();
+
+	//loop until end of expression list reached
+	while(tptr->tokenPeek() != ")")
+	{
+		compileExpression(tptr);
+
+		//print the comma if there are multiple expressions
+		if(tptr->tokenPeek() == ",")
+		{
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+		}
+	}
+
+	decrementTabs();
+	outputFile << printTabs() << "</parameterList>" << std::endl;
 }
 
 void CompilationEngine::compileParameterList(std::unique_ptr<Tokenizer> & tptr)
