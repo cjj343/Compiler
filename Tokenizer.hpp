@@ -1,5 +1,5 @@
-#ifndef TOKENIZER_H
-#define TOKENIZER_H
+#ifndef TOKENIZER_HPP
+#define TOKENIZER_HPP
 
 #include <string>
 #include <fstream>
@@ -16,33 +16,39 @@ class Tokenizer
 	private:
 		std::ifstream inputFile;
 		bool openError;
-		std::string line;		
+		std::string line;
+		size_t tokenCount;
+		int lineCount;
 
 		struct tokenStruct
 		{	
 			_tokenType type;
 			std::string token;
+			int line;
 			
 			tokenStruct()
 			{
 				type = DEFAULT;
 				token = "";
+				line = 0;
 
 			}
 
-			tokenStruct(_tokenType _type, std::string _token)
+			tokenStruct(_tokenType _type, std::string _token, int _line)
 			{
 				type = _type;
 				token = _token;
+				line = _line;
 			}
 		};
 
+		//holds tokens
 		std::vector<tokenStruct> tokenVector;
-		//these all the possible key words
+		//holds key words
 		std::vector<std::string> keywords;
-		//all the possible symbols
-		std::vector<std::string> symbols;
-	
+		//holds symbols
+		std::vector<std::string> symbols;		
+
 
 
 	public:	
@@ -50,19 +56,18 @@ class Tokenizer
 		bool errorCheck();
 		bool hasMoreTokens();
 		void advance();
-		void parse();
+		void tokenize();
 		void deliminateKeyword();
 		void deliminateSymbol();
 		void deliminateStringConstant();
 		void deliminateIntegerConstant();
-		//void parseIdentifier();
 		void tokenizeLine();
 		void tokenizeIdentifier(std::string);
+		void printTokens();
 		_tokenType tokenType();
+		std::string getToken();
+		std::string tokenPeek();
+		int getLine();
 		~Tokenizer();
-
 };
-
-
-
 #endif

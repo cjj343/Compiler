@@ -1,5 +1,5 @@
 #include "Tokenizer.hpp"
-
+#include <assert.h>
 
 Tokenizer::Tokenizer(std::string inputFileName)
 {
@@ -8,6 +8,8 @@ Tokenizer::Tokenizer(std::string inputFileName)
 	inputFile.open(inputFileName);
 	keywords = {"class", "constructor", "function", "method", "field", "static", "var", "int", "char", "boolean", "void", "true", "false", "null", "this", "let", "do", "if", "else", "while"};
 	symbols = {"{", "}", "(", ")", "[", "]", ".", ",", ";", "+", "-", "*", "/", "&", "|", "<", ">", "=", "~"};
+	tokenCount = 0;
+	lineCount = 0;
 
 
 	if (inputFile.fail())
@@ -24,23 +26,51 @@ bool Tokenizer::errorCheck()
 
 //check to see if there are more tokens
 bool Tokenizer::hasMoreTokens()
-{
+{	
+	if(tokenCount < tokenVector.size())
+	{
+		return true;
+	}
 
+	else
+	{
+		return false;
+	}
 }
 
 void Tokenizer::advance()
 {
-
+	tokenCount++;
 }
 
+_tokenType Tokenizer::tokenType()
+{
+	return tokenVector[tokenCount].type;
+}
 
-void Tokenizer::parse()
+std::string Tokenizer::getToken()
+{
+	return tokenVector[tokenCount].token;
+}
+
+int Tokenizer::getLine()
+{
+	return tokenVector[tokenCount - 1].line;
+}
+
+std::string Tokenizer::tokenPeek()
+{
+	assert(tokenCount + 1 < tokenVector.size());
+	return tokenVector[tokenCount + 1].token;
+}
+
+void Tokenizer::tokenize()
 {	
-	std::size_t found;
-	int placeMarker = 0;
+	//std::size_t found;
+	//int placeMarker = 0;
 	bool multiLineComment;
 	bool blankLine;
-	bool singleLineComment;
+	//bool singleLineComment;
 
 	while(!(inputFile.eof()))
 	{
@@ -48,6 +78,7 @@ void Tokenizer::parse()
 		blankLine = false;
 
 		getline(inputFile, line);
+		lineCount++;
 
 		//clean line of single line comments
 		if (line.find("//") != std::string::npos)
@@ -85,7 +116,7 @@ void Tokenizer::parse()
 		}
 
 		//testing for blank lines
-		for(int i = 0; i < line.length(); i++)
+		for(size_t i = 0; i < line.length(); i++)
 		{
 			if(isalnum(line[i]) || ispunct(line[i]))
 			{
@@ -132,21 +163,21 @@ void Tokenizer::tokenizeLine()
 		if(!temp.empty())
 		{	
 			//check to see if deliminated unit is keyword
-			for(int i = 0; i < keywords.size(); i++)
+			for(size_t i = 0; i < keywords.size(); i++)
 			{
 				if (temp == keywords[i])
 				{
-					tokenVector.push_back(tokenStruct(KEYWORD, temp));
+					tokenVector.push_back(tokenStruct(KEYWORD, temp, lineCount));
 					terminalFound = true;
 				}
 			}
 
 			//check to see if deliminated unit is symbol
-			for(int i = 0; i < symbols.size(); i++)
+			for(size_t i = 0; i < symbols.size(); i++)
 			{
 				if (temp == symbols[i])
 				{
-					tokenVector.push_back(tokenStruct(SYMBOL, temp));
+					tokenVector.push_back(tokenStruct(SYMBOL, temp, lineCount));
 					terminalFound = true;
 				}
 			}
@@ -154,7 +185,7 @@ void Tokenizer::tokenizeLine()
 			//check to see if deliminated unit is string
 			if(temp[0] == '\"')
 			{
-				tokenVector.push_back(tokenStruct(STRING_CONST, temp));
+				tokenVector.push_back(tokenStruct(STRING_CONST, temp, lineCount));
 				terminalFound = true;				
 			}	
 
@@ -163,7 +194,7 @@ void Tokenizer::tokenizeLine()
 			{	
 				//string streams delims can return empty string
 				//test for empty string
-				for(int i = 0; i < temp.length(); i++)
+				for(size_t i = 0; i < temp.length(); i++)
 				{
 					if(isalnum(temp[i]) || ispunct(temp[i]))
 					{
@@ -194,7 +225,7 @@ void Tokenizer::deliminateKeyword()
 	std::size_t found;
 			
 	//check a line for all the keywords
-	for(int i = 0; i < keywords.size(); i++)
+	for(size_t i = 0; i < keywords.size(); i++)
 	{	
 		found = line.find(keywords[i]);
 
@@ -217,7 +248,7 @@ void Tokenizer::deliminateSymbol()
 	std::size_t found;
 
 	//check a line for all symbols 
-	for(int i = 0; i < symbols.size(); i++)
+	for(size_t i = 0; i < symbols.size(); i++)
 	{	
 		found = line.find(symbols[i]);
 
@@ -272,9 +303,9 @@ void Tokenizer::tokenizeIdentifier(std::string identChunk)
 		if(!(temp.empty()))
 		{
 			//if unit is only ints then it is a integer constant
-			for(int i = 0; i < temp.length(); i++)
+			for(size_t i = 0; i < temp.length(); i++)
 			{
-				if(!(isalpha(temp[i])))
+				if(isalpha(temp[i]))
 				{
 					intConst = false;
 				}
@@ -283,15 +314,23 @@ void Tokenizer::tokenizeIdentifier(std::string identChunk)
 			//if only ints
 			if(intConst)
 			{
-				tokenVector.push_back(tokenStruct(INT_CONST, temp));
+				tokenVector.push_back(tokenStruct(INT_CONST, temp, lineCount));
 			}
 
 			//otherwise token is identifier
 			else
 			{
-				tokenVector.push_back(tokenStruct(IDENTIFIER, temp));
+				tokenVector.push_back(tokenStruct(IDENTIFIER, temp, lineCount));
 			}
 		}		
+	}
+}
+
+void Tokenizer::printTokens()
+{
+	for(size_t i = 0; i < tokenVector.size(); i++)
+	{
+		std::cout << tokenVector[i].type << " " << tokenVector[i].token << std::endl;
 	}
 }
 
