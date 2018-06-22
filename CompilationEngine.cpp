@@ -54,6 +54,9 @@ void CompilationEngine::compileClass(std::unique_ptr<Tokenizer> & tptr)
 		//}
 		safeAdvance(tptr, SYMBOL);
 		writeSymbol(tptr->getToken());
+
+	decrementTabs();
+	outputFile << printTabs() << "</class>" << std::endl;
 	
 
 }
@@ -147,27 +150,32 @@ void CompilationEngine::compileSubroutine(std::unique_ptr<Tokenizer> & tptr)
 
 			compileStatements(tptr);
 
+			//}
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+
+		decrementTabs();
+		outputFile << printTabs() << "</subroutineBody>" << std::endl;
+
 	decrementTabs();
-	outputFile << printTabs() << "</subRoutineDec>" << std::endl;
+	outputFile << printTabs() << "</subroutineDec>" << std::endl;
 
 }
 
 void CompilationEngine::compileStatements(std::unique_ptr<Tokenizer> & tptr)
 {
 	outputFile << printTabs() << "<statements>" << std::endl;
+			incrementTabs();
 
 	//if there are no statements for some reason
 	if(tptr->tokenPeek() == "}")
 	{
+			decrementTabs();
 		outputFile << " </statements>" << std::endl
 	}
 
 	else
 	{
-		outputFile << std::endl;
-
-		incrementTabs();
-
 		while(tptr->tokenPeek() == "}")
 		{	
 			if(tptr->tokenPeek() == "let")
@@ -177,24 +185,27 @@ void CompilationEngine::compileStatements(std::unique_ptr<Tokenizer> & tptr)
 
 			else if(tptr->tokenPeek() == "if")
 			{
-
+				compileIf(tptr);
 			}
 
 			else if(tptr->tokenPeek() == "while")
 			{
-				
+				compileWhile(tptr);	
 			}
 
 			else if(tptr->tokenPeek() == "do")
 			{
-				
+				compileDo(tptr);	
 			}
 
 			else if(tptr->tokenPeek() == "return")
 			{
-				
+				compileReturn(tptr);
 			}									
 		}
+
+			decrementTabs();
+		outputFile << " </statements>" << std::endl
 	}
 
 }
@@ -253,6 +264,139 @@ void CompilationEngine::compileLet(std::unique_ptr<Tokenizer> & tptr)
 	outputFile << printTabs() << "</letStatement>" << std::endl;
 }
 
+void CompilationEngine::compileIf(std::unique_ptr<Tokenizer> & tptr)
+{
+
+	outputFile << printTabs() << "<ifStatement>" << std::endl;
+	incrementTabs();
+
+		//should be if
+		safeAdvance(tptr, KEYWORD);
+		writeKeyword(tptr->getToken());
+
+		//(
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		//the stuff in between ()
+		compileExpression(tptr);
+
+		//)
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		//{
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		compileStatements(tptr);
+
+		//}
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		if(tptr->tokenPeek() == "else")
+		{
+			//should be else
+			safeAdvance(tptr, KEYWORD);
+			writeKeyword(tptr->getToken());
+
+			//(
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+
+			//the stuff in between ()
+			compileExpression(tptr);
+
+			//)
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+
+			//{
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+
+			compileStatements(tptr);
+
+			//}
+			safeAdvance(tptr, SYMBOL);
+			writeSymbol(tptr->getToken());
+
+		}
+
+			decrementTabs();
+	outputFile << printTabs() << "</ifStatement>" << std::endl;
+}
+
+void CompilationEngine::compileWhile(std::unique_ptr<Tokenizer> & tptr)
+{
+	outputFile << printTabs() << "<whileStatement>" << std::endl;
+	incrementTabs();
+
+		//should be while
+		safeAdvance(tptr, KEYWORD);
+		writeKeyword(tptr->getToken());
+
+		//(
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		//the stuff in between ()
+		compileExpression(tptr);
+
+		//)
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		//{
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		compileStatements(tptr);
+
+		//}
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		decrementTabs();
+	outputFile << printTabs() << "</whileStatement>" << std::endl;
+}
+
+void CompilationEngine::compileDo(std::unique_ptr<Tokenizer> & tptr)
+{
+	outputFile << printTabs() << "<doStatement>" << std::endl;
+	incrementTabs();
+
+		subroutineCall(tptr);
+
+		//;
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		decrementTabs();
+	outputFile << printTabs() << "</doStatement>" << std::endl;
+}
+
+void CompilationEngine::compileReturn(std::unique_ptr<Tokenizer> &)
+{
+	outputFile << printTabs() << "<returnStatement>" << std::endl;
+		incrementTabs();
+
+		//should be return
+		safeAdvance(tptr, KEYWORD);
+		writeKeyword(tptr->getToken());
+
+		compileExpression(tptr);
+
+		//;
+		safeAdvance(tptr, SYMBOL);
+		writeSymbol(tptr->getToken());
+
+		decrementTabs();
+	outputFile << printTabs() << "</returnStatement>" << std::endl;	
+
+}
+
 void CompilationEngine::compileExpression(std::unique_ptr<Tokenizer> & tptr)
 {
 
@@ -260,7 +404,7 @@ void CompilationEngine::compileExpression(std::unique_ptr<Tokenizer> & tptr)
 	incrementTabs();
 
 	//loop until we encounter the end of the expression
-	while(tptr->tokenPeek() != "]" && tptr->tokenPeek() != ")" && tptr->tokenPeek() != ",")
+	while(tptr->tokenPeek() != "]" && tptr->tokenPeek() != ")" && tptr->tokenPeek() != "," && tptr->tokenPeek() != ";")
 	{
 		//operators
 		if(tptr->tokenPeek() == "+" || tptr->tokenPeek() == "-" || tptr->tokenPeek() == "*" || tptr->tokenPeek() == "/" || tptr->tokenPeek() == "&" || tptr->tokenPeek() == "|" || 
