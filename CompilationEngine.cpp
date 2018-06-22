@@ -48,7 +48,7 @@ void CompilationEngine::compileClass(std::unique_ptr<Tokenizer> & tptr)
 
 		while(tptr->tokenPeek() == "function" || tptr->tokenPeek() == "constructor" || tptr->tokenPeek() == "method")
 		{
-			compileSubroutine(tptr, curTok);
+			compileSubroutine(tptr);
 		}
 
 		//}
@@ -171,7 +171,7 @@ void CompilationEngine::compileStatements(std::unique_ptr<Tokenizer> & tptr)
 	if(tptr->tokenPeek() == "}")
 	{
 			decrementTabs();
-		outputFile << " </statements>" << std::endl
+		outputFile << " </statements>" << std::endl;
 	}
 
 	else
@@ -205,7 +205,7 @@ void CompilationEngine::compileStatements(std::unique_ptr<Tokenizer> & tptr)
 		}
 
 			decrementTabs();
-		outputFile << " </statements>" << std::endl
+		outputFile << " </statements>" << std::endl;
 	}
 
 }
@@ -377,7 +377,7 @@ void CompilationEngine::compileDo(std::unique_ptr<Tokenizer> & tptr)
 	outputFile << printTabs() << "</doStatement>" << std::endl;
 }
 
-void CompilationEngine::compileReturn(std::unique_ptr<Tokenizer> &)
+void CompilationEngine::compileReturn(std::unique_ptr<Tokenizer> & tptr)
 {
 	outputFile << printTabs() << "<returnStatement>" << std::endl;
 		incrementTabs();
@@ -526,7 +526,7 @@ void CompilationEngine::subroutineCall(std::unique_ptr<Tokenizer> & tptr)
 
 		//)
 		safeAdvance(tptr, SYMBOL);
-		writeSymbol(tptr->getToken())
+		writeSymbol(tptr->getToken());
 	}
 
 	//class name or var name has already been printed in calling function
@@ -535,7 +535,7 @@ void CompilationEngine::subroutineCall(std::unique_ptr<Tokenizer> & tptr)
 	{
 		//.
 		safeAdvance(tptr, SYMBOL);
-		writeSymbol(tptr->getToken())
+		writeSymbol(tptr->getToken());
 
 		//subroutineName
 		safeAdvance(tptr, IDENTIFIER);
@@ -549,7 +549,7 @@ void CompilationEngine::subroutineCall(std::unique_ptr<Tokenizer> & tptr)
 
 		//)
 		safeAdvance(tptr, SYMBOL);
-		writeSymbol(tptr->getToken())
+		writeSymbol(tptr->getToken());
 	}
 
 }
@@ -582,7 +582,7 @@ void CompilationEngine::compileParameterList(std::unique_ptr<Tokenizer> & tptr)
 
 	if(tptr->tokenPeek() == ")")
 	{
-		outputFile << " </parameterList>" << std::endl
+		outputFile << " </parameterList>" << std::endl;
 	}
 
 	else
@@ -777,7 +777,7 @@ void CompilationEngine::safeAdvance(std::unique_ptr<Tokenizer> & tptr, _tokenTyp
 
 }
 
-void CompilationEngine::safeAdvanceNoTypeCheck(std::unique_ptr<Tokenizer> &)
+void CompilationEngine::safeAdvanceNoTypeCheck(std::unique_ptr<Tokenizer> & tptr)
 {
 	std::string exceptionString;
 

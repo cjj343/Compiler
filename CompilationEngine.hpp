@@ -21,7 +21,7 @@ class CompilationEngine
 		void compileVarDec(std::unique_ptr<Tokenizer> &);
 		void compileSubroutine(std::unique_ptr<Tokenizer> &);
 		void compileParameterList(std::unique_ptr<Tokenizer> &);
-		void compileStatments(std::unique_ptr<Tokenizer> &);
+		void compileStatements(std::unique_ptr<Tokenizer> &);
 		void compileLet(std::unique_ptr<Tokenizer> &);
 		void compileIf(std::unique_ptr<Tokenizer> &);
 		void compileWhile(std::unique_ptr<Tokenizer> &);
