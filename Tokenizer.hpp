@@ -6,8 +6,8 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
-#include <bits/stdc++.h>
 #include <cctype>
+#include <sstream>
 
 enum _tokenType {KEYWORD, SYMBOL, IDENTIFIER, INT_CONST, STRING_CONST, DEFAULT};
 
@@ -68,6 +68,7 @@ class Tokenizer
 		std::string getToken();
 		std::string tokenPeek();
 		int getLine();
+		bool checkKeyword(size_t, std::string);
 		~Tokenizer();
 };
 #endif

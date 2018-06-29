@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include "Tokenizer.hpp"
+#include <memory>
 
 class CompilationEngine
 {
@@ -27,7 +28,7 @@ class CompilationEngine
 		void compileWhile(std::unique_ptr<Tokenizer> &);
 		void compileDo(std::unique_ptr<Tokenizer> &);
 		void compileReturn(std::unique_ptr<Tokenizer> &);
-		void compileExpression(std::unique_ptr<Tokenizer> &);
+		void compileExpression(std::unique_ptr<Tokenizer> &, bool);
 		void compileTerm(std::unique_ptr<Tokenizer> &);
 		void subroutineCall(std::unique_ptr<Tokenizer> &);
 		void compileExpressionList(std::unique_ptr<Tokenizer> &);

@@ -8,11 +8,8 @@
 int main(int argc, char* argv[])
 {
 	std::string inputFileName;
-	std::unique_ptr<Tokenizer> tokenPtr;
-	std::unique_ptr<CompilationEngine> compilePtr;
-	
-	//Tokenizer *tokenPtr = nullptr;
-	//CompilationEngine *compilePtr = nullptr;
+	//std::unique_ptr<Tokenizer> tokenPtr;
+	//std::unique_ptr<CompilationEngine> compilePtr;
 
 	// Check the number of parameters
 	if (argc < 2)
@@ -29,43 +26,30 @@ int main(int argc, char* argv[])
 		inputFileName = argv[fileCount];
 
 		//creat a new object passing file name to constructor
-		tokenPtr.reset(new Tokenizer(inputFileName));
-		compilePtr.reset(new CompilationEngine(inputFileName));
+		//tokenPtr.reset(new Tokenizer(inputFileName));
+		//compilePtr.reset(new CompilationEngine(inputFileName));
 
-		//tokenPtr = new Tokenizer(inputFileName);
-		//compilePtr = new CompilationEngine(inputFileName);
+		std::unique_ptr<Tokenizer> tokenPtr (new Tokenizer(inputFileName));
+
+		std::unique_ptr<CompilationEngine> compilePtr (new CompilationEngine(inputFileName));
 
 		//test for open errors
 		if(tokenPtr->errorCheck() || compilePtr->errorCheck())
 		{
 			//if there is an error, print status and manage memory then exit
 			std::cout << "There was an error opening the file." << std::endl;
-			//delete tokenPtr;
-			//tokenPtr = nullptr;
-			//delete compilePtr;
-			//ompilePtr = nullptr;
 			return 1;
 		}
 
 		tokenPtr->tokenize();
-		//tokenPtr->printTokens();
+		tokenPtr->printTokens();
 		compilePtr->compileClass(tokenPtr);
-
-
-
-
-		
-
-		
-		
-
-		//delete tokenPtr;
-		//tokenPtr = nullptr;
-
-		//delete compilePtr;
-		//compilePtr = nullptr;
+		//tokenPtr.reset();
+		//compilePtr.reset();
 
 	}
+
+
 
 	return 0;
 }

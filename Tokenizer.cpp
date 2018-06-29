@@ -6,7 +6,7 @@ Tokenizer::Tokenizer(std::string inputFileName)
 	//open the file and test for errors
 	openError = false;
 	inputFile.open(inputFileName);
-	keywords = {"class", "constructor", "function", "method", "field", "static", "var", "int", "char", "boolean", "void", "true", "false", "null", "this", "let", "do", "if", "else", "while"};
+	keywords = {"class", "constructor", "function", "method", "field", "static", "var", "int", "char", "boolean", "void", "true", "false", "null", "this", "let", "do", "if", "else", "while", "return"};
 	symbols = {"{", "}", "(", ")", "[", "]", ".", ",", ";", "+", "-", "*", "/", "&", "|", "<", ">", "=", "~"};
 	tokenCount = 0;
 	lineCount = 0;
@@ -66,15 +66,11 @@ std::string Tokenizer::tokenPeek()
 
 void Tokenizer::tokenize()
 {	
-	//std::size_t found;
-	//int placeMarker = 0;
 	bool multiLineComment;
 	bool blankLine;
-	//bool singleLineComment;
 
 	while(!(inputFile.eof()))
 	{
-		multiLineComment = false;
 		blankLine = false;
 
 		getline(inputFile, line);
@@ -185,7 +181,18 @@ void Tokenizer::tokenizeLine()
 			//check to see if deliminated unit is string
 			if(temp[0] == '\"')
 			{
-				tokenVector.push_back(tokenStruct(STRING_CONST, temp, lineCount));
+				std::string noQuote;
+
+				//delimination leaves the quotes in the token
+				//loop through the string and remove the quotes
+				for(size_t i = 0; i < temp.size(); i++)
+				{
+					if(temp[i] != '\"')
+						noQuote += temp[i];
+
+				}	
+
+				tokenVector.push_back(tokenStruct(STRING_CONST, noQuote, lineCount));
 				terminalFound = true;				
 			}	
 
@@ -232,14 +239,36 @@ void Tokenizer::deliminateKeyword()
 		//check to see if mult of same keyword in a line
 		while(found != std::string::npos)
 		{	
-			//add the deliminators
-			line.insert(found + keywords[i].length(), "%");
-			line.insert(found, "%");
+			if(checkKeyword(found, keywords[i]))
+			{
+				//add the deliminators
+				line.insert(found + keywords[i].length(), "%");
+				line.insert(found, "%");
+			}
 
 			//search again
 			found = line.find(keywords[i], found + 3);
 		}
 	}
+}
+
+bool Tokenizer::checkKeyword(size_t i, std::string word)
+{
+
+	if(isalnum(line[i - 1]))
+	{
+		return false;
+	}
+
+	if(i + word.length() <= line.length())
+	{
+		if(isalnum(line[i + word.length()]))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 //adds % symbol between terminal units
@@ -276,17 +305,18 @@ void Tokenizer::deliminateStringConstant()
 	//check for multiple strings in line
 	while(found != std::string::npos)
 	{
-		//add deliminator before first quotation mark
+		//add deliminator after first quotation mark
 		line.insert(found, "%");
 
 		//search for the second quote mark
 		found = line.find("\"", found + 2);
 
-		//insert delim after
+		//insert delim after second quote
 		line.insert(found + 1, "%");
 
 		//check to see if there is another quote pair
-		found = line.find("\"", found + 1);
+		if((found + 2) != std::string::npos)
+			found = line.find("\"", found + 2);
 	}
 }
 
@@ -328,10 +358,15 @@ void Tokenizer::tokenizeIdentifier(std::string identChunk)
 
 void Tokenizer::printTokens()
 {
+	std::ofstream outputfile;
+	outputfile.open("tokens.txt");
+
 	for(size_t i = 0; i < tokenVector.size(); i++)
 	{
-		std::cout << tokenVector[i].type << " " << tokenVector[i].token << std::endl;
+		outputfile << tokenVector[i].type << " " << tokenVector[i].token << "\r\n";
 	}
+
+	outputfile.close();
 }
 
 Tokenizer::~Tokenizer()
