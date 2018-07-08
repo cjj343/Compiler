@@ -1,6 +1,12 @@
 #include "Tokenizer.hpp"
 #include <assert.h>
 
+/**********************************************************************************
+*Params
+	- file name
+*Excepts raw file (.jack) from main and opens it for processing
+*Establishes reserved keywords and tokens 
+***********************************************************************************/
 Tokenizer::Tokenizer(std::string inputFileName)
 {
 	//open the file and test for errors
@@ -11,20 +17,24 @@ Tokenizer::Tokenizer(std::string inputFileName)
 	tokenCount = 0;
 	lineCount = 0;
 
-
 	if (inputFile.fail())
 	{
 		openError = true;
 	}
 }
 
-//used by main to get info on status of file opening
+/**********************************************************************************
+*Used by main to check for file open errors
+*TODO: probbly should be try catch block in constructor
+***********************************************************************************/
 bool Tokenizer::errorCheck()
 {
 	return openError;
 }
 
-//check to see if there are more tokens
+/**********************************************************************************
+*Helper function returning true if there are more tokens
+***********************************************************************************/
 bool Tokenizer::hasMoreTokens()
 {	
 	if(tokenCount < tokenVector.size())
@@ -38,37 +48,56 @@ bool Tokenizer::hasMoreTokens()
 	}
 }
 
+/**********************************************************************************
+*Increments the token index
+***********************************************************************************/
 void Tokenizer::advance()
 {
 	tokenCount++;
 }
 
+/**********************************************************************************
+*Returns the token type
+***********************************************************************************/
 _tokenType Tokenizer::tokenType()
 {
 	return tokenVector[tokenCount].type;
 }
 
+/**********************************************************************************
+*Returns the token
+***********************************************************************************/
 std::string Tokenizer::getToken()
 {
 	return tokenVector[tokenCount].token;
 }
 
+/**********************************************************************************
+*Gets a whole line from the raw jack file
+***********************************************************************************/
 int Tokenizer::getLine()
 {
 	return tokenVector[tokenCount - 1].line;
 }
 
+/**********************************************************************************
+*Check the token immediately after the current token
+***********************************************************************************/
 std::string Tokenizer::tokenPeek()
 {
 	assert(tokenCount + 1 < tokenVector.size());
 	return tokenVector[tokenCount + 1].token;
 }
 
+/**********************************************************************************
+*Tokenized a jack file
+***********************************************************************************/
 void Tokenizer::tokenize()
 {	
 	bool multiLineComment;
 	bool blankLine;
 
+	//loop while the file still has data
 	while(!(inputFile.eof()))
 	{
 		blankLine = false;
@@ -128,22 +157,28 @@ void Tokenizer::tokenize()
 
 		//tokenize a line
 		if(!multiLineComment && !blankLine)
-		{	
+		{
+			//add delimination for strings
+			deliminateStringConstant();	
+
 			//add delimination for keywrods
 			deliminateKeyword();
 
 			//add delimination for symbols
 			deliminateSymbol();
 
-			//add delimination for strings
-			deliminateStringConstant();			
-
 			//and tokens to vector
 			tokenizeLine();
+
+			stringBeg.clear();
+			stringEnd.clear();
 		}				
 	}
 }
 
+/**********************************************************************************
+*After a line has been deliminated go through and collect tokens
+***********************************************************************************/
 void Tokenizer::tokenizeLine()
 {
 	std::string temp = "";
@@ -226,32 +261,64 @@ void Tokenizer::tokenizeLine()
 	}
 }
 
-//adds % symbol between terminal units
+/**********************************************************************************
+*Adds % around terminal units
+***********************************************************************************/
 void Tokenizer::deliminateKeyword()
 {
 	std::size_t found;
+
+	bool withinString = false;
 			
 	//check a line for all the keywords
 	for(size_t i = 0; i < keywords.size(); i++)
 	{	
 		found = line.find(keywords[i]);
 
+		//check to see if found token is with a string
+		for(size_t i = 0; i < stringBeg.size(); i++)
+		{
+			if(found >= stringBeg[i] && found <= stringEnd[i])
+			{
+				withinString = true; //if it is ignore it
+			}
+		}
+
 		//check to see if mult of same keyword in a line
 		while(found != std::string::npos)
 		{	
 			if(checkKeyword(found, keywords[i]))
 			{
-				//add the deliminators
-				line.insert(found + keywords[i].length(), "%");
-				line.insert(found, "%");
+				if(!withinString)
+				{
+					//add the deliminators
+					line.insert(found + keywords[i].length(), "%");
+					line.insert(found, "%");
+				}
 			}
+
+			withinString = false;
 
 			//search again
 			found = line.find(keywords[i], found + 3);
+
+			for(size_t i = 0; i < stringBeg.size(); i++)
+			{
+				if(found >= stringBeg[i] && found <= stringEnd[i])
+				{
+					withinString = true;
+				}
+			}
 		}
+
+		withinString = false;
 	}
 }
 
+/**********************************************************************************
+*Checks to make sure that a keyowrd is not part of variable name
+*For example: "Print" contains keyowrd int. We need to make sure keyword is alone
+***********************************************************************************/
 bool Tokenizer::checkKeyword(size_t i, std::string word)
 {
 
@@ -271,56 +338,95 @@ bool Tokenizer::checkKeyword(size_t i, std::string word)
 	return true;
 }
 
-//adds % symbol between terminal units
+/**********************************************************************************
+*Adds % around terminal units
+***********************************************************************************/
 void Tokenizer::deliminateSymbol()
 {
 	std::size_t found;
+	bool withinString = false;
 
 	//check a line for all symbols 
 	for(size_t i = 0; i < symbols.size(); i++)
 	{	
 		found = line.find(symbols[i]);
 
+		//check to see if symbol is within a string
+		for(size_t i = 0; i < stringBeg.size(); i++)
+		{
+			if(found > stringBeg[i] && found < stringEnd[i])
+			{
+				withinString = true; //if it is then ignore it
+			}
+		}
+
 		//check for multiple of same symbols in line
 		while(found != std::string::npos)
 		{
-			//add deliminators
-			line.insert(found + symbols[i].length(), "%");
-			line.insert(found, "%");
+			if(!withinString)
+			{
+				//add deliminators
+				line.insert(found + symbols[i].length(), "%");
+				line.insert(found, "%");
+			}
+
+			withinString = false;
 
 			//search again
 			found = line.find(symbols[i], found + 3);
+
+			for(size_t i = 0; i < stringBeg.size(); i++)
+			{
+				if(found > stringBeg[i] && found < stringEnd[i])
+				{
+					withinString = true;
+				}
+			}
 		}
+
+		withinString = false;
 	}
 }
 
-//adds delims to string constants
+/**********************************************************************************
+*Adds % around terminal units
+***********************************************************************************/
 void Tokenizer::deliminateStringConstant()
 {
 	std::size_t found;
 
 	//check for first quote
 	found = line.find("\"");
+
+	if(found != std::string::npos)
+	{
+		stringBeg.push_back(found + 1); //add value of found to a vector containing the beginning location of a string
+	}
 	
 	//check for multiple strings in line
 	while(found != std::string::npos)
 	{
-		//add deliminator after first quotation mark
-		line.insert(found, "%");
-
-		//search for the second quote mark
-		found = line.find("\"", found + 2);
-
-		//insert delim after second quote
-		line.insert(found + 1, "%");
+		line.insert(found, "%"); //add deliminator after first quotation mark
+		found = line.find("\"", found + 2); //search for the second quote mark
+		stringEnd.push_back(found); //add value of found to a vector containing the ending location of a string
+		line.insert(found + 1, "%"); //insert delim after second quote
 
 		//check to see if there is another quote pair
 		if((found + 2) != std::string::npos)
+		{
 			found = line.find("\"", found + 2);
+			
+			if(found != std::string::npos)
+			{
+				stringBeg.push_back(found + 1);
+			}
+		}
 	}
 }
 
-//tokenize identifier
+/**********************************************************************************
+*Adds % around terminal units
+***********************************************************************************/
 void Tokenizer::tokenizeIdentifier(std::string identChunk)
 {
 	std::string temp = "";
@@ -356,6 +462,10 @@ void Tokenizer::tokenizeIdentifier(std::string identChunk)
 	}
 }
 
+/**********************************************************************************
+*Prints out tokens to a text file if desired
+*Add call to main for token print
+***********************************************************************************/
 void Tokenizer::printTokens()
 {
 	std::ofstream outputfile;

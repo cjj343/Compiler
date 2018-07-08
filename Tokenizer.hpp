@@ -19,6 +19,8 @@ class Tokenizer
 		std::string line;
 		size_t tokenCount;
 		int lineCount;
+		std::vector<size_t> stringBeg;
+		std::vector<size_t> stringEnd;
 
 		struct tokenStruct
 		{	
